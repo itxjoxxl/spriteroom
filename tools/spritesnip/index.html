@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Spriteroom — Sprite Sheet Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo" onclick="renameProject()">spriteroom<span id="projectNameLabel">.tool</span></div>
+    <div class="mode-indicator" id="modeIndicator" style="display:none;">
+      <span class="mode-badge snip active" id="snipModeBadge" onclick="switchToMode('snip')" title="Snip — cut sprites from sheet">SNIP</span>
+      <span class="mode-badge edit" id="editModeBadge" onclick="switchToMode('edit')" title="Edit — pixel art editor">EDIT</span>
+      <span class="mode-badge compose" id="composeModeBadge" onclick="switchToMode('compose')" title="Compose — build sprite sheets">COMPOSE</span>
+    </div>
+    <div class="sheet-tabs" id="sheetTabs"></div>
+    <div class="header-actions">
+      <!-- Auto-detect dropdown -->
+      <div class="dropdown" id="autoDropdown" style="display:none">
+        <button class="dropdown-btn" onclick="toggleDD('autoDD')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <span class="btn-label">Auto</span> <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="dropdown-menu" id="autoDD">
+          <div class="dd-item" onclick="runAutoDetect();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Detect Sprites</div>
+          <div class="dd-item" onclick="showGridModal();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg> Grid Slicer</div>
+          <div class="dd-item" onclick="fixOverlaps();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="8" height="8" rx="1"/><rect x="14" y="12" width="8" height="8" rx="1"/><path d="M10 8h4v8h-4" stroke-dasharray="2 2" opacity="0.5"/></svg> Fix Overlapping Boxes</div>
+          <div class="dd-item" onclick="autoTrimSprites();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l0 4"/><path d="M10 2l0 4"/><path d="M6 18l0 4"/><path d="M10 18l0 4"/><rect x="2" y="6" width="12" height="12" rx="1" stroke-dasharray="2 2"/><rect x="4" y="8" width="8" height="8" rx="1"/></svg> Auto-Trim Sprites</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item" onclick="showRemoveBgModal();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="4" y1="20" x2="20" y2="4" stroke-width="2"/></svg> Remove Background</div>
+          <div class="dd-item" onclick="showAutoColorModal();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-5.2-4.5-9-10-9z"/></svg> Auto-Tag Colors</div>
+          <div class="dd-item" onclick="showBulkRecolorModal();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Bulk Recolor Sprites</div>
+
+        </div>
+      </div>
+      <!-- Export dropdown -->
+      <div class="dropdown" id="exportDropdown" style="display:none">
+        <button class="dropdown-btn primary" onclick="toggleDD('exportDD')" style="background:var(--accent);border-color:var(--accent);color:#fff;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span class="btn-label">Export</span> <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="dropdown-menu" id="exportDD">
+          <div class="dd-header">Export</div>
+          <div class="dd-item" onclick="exportProject();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Project (.zip)</div>
+          <div class="dd-item" id="exportCurrentTabItem" onclick="exportCurrentTab();closeAllDD()" style="display:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/></svg> Current Tab (.zip)</div>
+          <div class="dd-item" id="exportSpriteItem" onclick="exportSelectedSpritePng();closeAllDD()" style="display:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Selected Sprite (.png)</div>
+          <div class="dd-item" onclick="exportJSON();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> JSON Instructions</div>
+        </div>
+      </div>
+      <!-- New / Import dropdown — always visible -->
+      <div class="dropdown" id="importDropdown">
+        <button class="dropdown-btn" onclick="toggleDD('importDD')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span class="btn-label">New</span> <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="dropdown-menu" id="importDD">
+          <div class="dd-header">Create</div>
+          <div class="dd-item" onclick="peNewPixelArt();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg> New Pixel Art</div>
+          <div class="dd-item" onclick="createNewSheetTab();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="5" height="5" rx="1"/><rect x="10" y="6" width="5" height="5" rx="1"/><rect x="6" y="13" width="5" height="5" rx="1"/></svg> New Sprite Sheet</div>
+          <div class="dd-sep"></div>
+          <div class="dd-header">Import</div>
+          <div class="dd-item" onclick="document.getElementById('fileInput').click();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Sprite Sheet Image</div>
+          <div class="dd-item" onclick="document.getElementById('yyImportInput').click();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="16 13 12 17 8 13"/><line x1="12" y1="17" x2="12" y2="11"/></svg> GameMaker Sprite (.yy)</div>
+          <div class="dd-item" id="importJsonItem" style="display:none" onclick="document.getElementById('jsonImportInput').click();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> JSON (apply to tab)</div>
+          <div class="dd-item" onclick="document.getElementById('projectImportInput').click();closeAllDD()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Project (.zip)</div>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" multiple>
+      <input type="file" id="yyImportInput" accept=".yy" style="display:none">
+      <input type="file" id="jsonImportInput" accept=".json" style="display:none">
+      <input type="file" id="projectImportInput" accept=".zip" style="display:none">
+    </div>
+  </header>
+  <div class="main-area">
+    <div class="toolbar" id="toolbar" style="display:none">
+      <button class="tool-btn active" data-tool="select" onclick="setTool('select')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1.5" stroke-dasharray="3 2"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/></svg><div class="tt">Draw Sprite Box (S)</div></button>
+      <button class="tool-btn" data-tool="lasso" onclick="setTool('lasso')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 4C20 6 21 9 20 12c-1 4-5 7-9 7s-7-2-8-5c-1-4 1-8 5-10" fill="none"/><circle cx="8" cy="4" r="2"/><path d="M8 6v4" /><path d="M6 8.5c0 1 .9 2 2 2s2-1 2-2"/></svg><div class="tt">Lasso Select (L)</div></button>
+      <button class="tool-btn" data-tool="move" onclick="setTool('move')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3"/><path d="M2 12h8"/><path d="M19 9l3 3-3 3"/><path d="M14 12h8"/><path d="M9 5l3-3 3 3"/><path d="M12 2v8"/><path d="M9 19l3 3 3-3"/><path d="M12 14v8"/></svg><div class="tt">Move Selected (M)</div></button>
+      <button class="tool-btn" data-tool="category" onclick="setTool('category')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><div class="tt">Group Region (C)</div></button>
+      <button class="tool-btn" data-tool="subcategory" onclick="setTool('subcategory')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2" stroke-dasharray="3 2"/><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg><div class="tt">Sub-Group Region (G)</div></button>
+      <button class="tool-btn" data-tool="repeat" onclick="setTool('repeat')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="5" height="5" rx="1"/><rect x="10" y="6" width="5" height="5" rx="1" opacity="0.5"/><rect x="18" y="6" width="5" height="5" rx="1" opacity="0.3"/><path d="M5 15l3-2.5L5 10" fill="none"/><path d="M8 12.5h7"/><path d="M17 10l3 2.5-3 2.5" fill="none"/></svg><div class="tt">Repeat Pattern (R)</div></button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="tag" onclick="setTool('tag')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg><div class="tt">Tag Tool (T)</div></button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="pan" onclick="setTool('pan')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v7"/><path d="M10 10.5V8a2 2 0 0 0-4 0v6"/><path d="M18 11a2 2 0 0 1 4 0v3a8 8 0 0 1-8 8h-2c-2.5 0-4.5-1-5.5-2.5L3 14a2 2 0 0 1 3-1l2 2"/></svg><div class="tt">Pan View (Space / H)</div></button>
+      <button class="tool-btn" data-tool="erase" onclick="setTool('erase')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16a1.5 1.5 0 0 1 0-2l11-11a1.5 1.5 0 0 1 2 0l5 5a1.5 1.5 0 0 1 0 2L13 18"/><line x1="7" y1="20" x2="20" y2="20"/><line x1="18" y1="13" x2="11" y2="6"/></svg><div class="tt">Erase Sprite Box (E)</div></button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" id="undoBtn" disabled onclick="undo()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-5.36L1 10"/></svg><div class="tt">Undo (Ctrl+Z)</div></button>
+      <button class="tool-btn" id="redoBtn" disabled onclick="redo()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-5.36L23 10"/></svg><div class="tt">Redo (Ctrl+Y)</div></button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" onclick="zoomFit()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><polyline points="21 15 21 21 15 21"/><polyline points="3 9 3 3 9 3"/><rect x="7" y="7" width="10" height="10" rx="1" stroke-dasharray="2 2" opacity="0.5"/></svg><div class="tt">Zoom to Fit (F)</div></button>
+      <button class="tool-btn" onclick="clearAll()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><div class="tt">Clear All Boxes</div></button>
+      <div style="flex:1"></div>
+      <!-- Tag Popover -->
+      <div class="tag-popover" id="tagPopover">
+        <div class="tag-popover-header">Tags
+          <button class="btn sm" id="multiTagBtn" onclick="toggleMultiTagMode()" style="margin-left:auto;font-size:9px;">Multi</button>
+          <button class="btn sm" onclick="openTagMgmt()" style="font-size:9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+          <button class="minimize-btn" onclick="toggleTagPopoverMinimize()" title="Minimize"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button class="close-pop" onclick="closeTagPopover()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="tag-popover-body" id="tagPopoverBody"></div>
+        <div class="tag-popover-footer">
+          <div class="tag-apply-mode"><span>Mode:</span>
+            <select id="tagApplyMode"><option value="click">Click sprite</option><option value="lasso">Lasso</option></select>
+          </div>
+        </div>
+      </div>
+      <button class="tool-btn" onclick="togglePanel()" id="panelToggle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="18" y1="8" x2="17" y2="8" opacity="0.4"/><line x1="18" y1="11" x2="17" y2="11" opacity="0.4"/><line x1="18" y1="14" x2="17" y2="14" opacity="0.4"/></svg><div class="tt">Toggle Side Panel (Tab)</div></button>
+    </div>
+    <div class="canvas-container">
+      <div class="canvas-wrap" id="canvasWrap">
+        <div class="dropzone" id="dropzone"><div class="dropzone-box" id="dropzoneBox"><div class="icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/><rect x="2" y="13" width="9" height="9" rx="1.5"/><rect x="13" y="13" width="9" height="9" rx="1.5" stroke-dasharray="2 2"/></svg></div><div class="label">Drop sprite sheet to snip</div><div class="sub">PNG, JPG, WebP — or click to browse</div></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
+            <button class="btn" onclick="peNewPixelArt()" style="font-size:12px;padding:8px 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>New Pixel Art</button>
+            <button class="btn" onclick="createNewSheetTab()" style="font-size:12px;padding:8px 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><rect x="2" y="6" width="5" height="5" rx="1"/><rect x="10" y="6" width="5" height="5" rx="1"/><line x1="17" y1="11" x2="22" y2="11"/><line x1="19.5" y1="8.5" x2="19.5" y2="13.5"/></svg>Create Sprite Sheet</button>
+          </div>
+          <div id="restoreBar" style="display:none;margin-top:12px;"><button class="btn" onclick="restoreSession()" style="font-size:12px;padding:8px 16px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-5.36L1 10"/></svg>Restore previous session</button><button class="btn sm" onclick="clearSavedSession()" style="margin-left:6px;font-size:10px;" title="Discard saved session">✕</button></div>
+
+        </div>
+        <canvas id="mainCanvas"></canvas><canvas id="overlayCanvas"></canvas><canvas id="gridCanvas" class="grid-overlay"></canvas><div id="interactionLayer"></div>
+        <div class="pe-mirror-indicator" id="peMirrorIndicator"><button class="pe-mirror-btn" id="peMirrorXBtn" onclick="peToggleMirrorX()">X</button><button class="pe-mirror-btn" id="peMirrorYBtn" onclick="peToggleMirrorY()">Y</button></div>
+        <div class="float-sel-bar" id="floatSelBar"><span class="fsel-info" id="floatSelInfo">0 sel</span><button class="btn sm" onclick="duplicateSelected()">Dup</button><button class="btn sm danger" onclick="deleteSelected()">Del</button></div>
+      </div>
+      <div class="bottom-bar" id="bottomBar" style="display:none">
+        <div class="zoom-info"><button onclick="zoomBy(-0.5)">−</button><span id="zoomLevel">100%</span><button onclick="zoomBy(0.5)">+</button></div>
+        <div class="coord-info" id="coordInfo">0, 0</div>
+        <div class="bg-picker"><span class="bg-lbl">BG</span><div class="bg-swatch active" style="background:repeating-conic-gradient(#444 0% 25%, #888 0% 50%) 50%/6px 6px;" onclick="setBg('checker',this)"></div><div class="bg-swatch" style="background:#000" onclick="setBg('#000000',this)"></div><div class="bg-swatch" style="background:#fff" onclick="setBg('#ffffff',this)"></div><div class="bg-swatch" style="background:#171717" onclick="setBg('#171717',this)"></div><input type="color" value="#333333" onchange="setBg(this.value,null)"></div>
+        <div class="view-picker"><span class="vp-lbl">Show</span><div class="view-toggle on" id="viewSprToggle" onclick="toggleViewSpr()" title="Sprite boxes">S</div><div class="view-toggle on" id="viewCatToggle" onclick="toggleViewCat()" title="Group regions">C</div><div class="view-toggle on" id="viewSubToggle" onclick="toggleViewSub()" title="Sub-group regions">G</div></div>
+        <div class="active-tool-label" id="activeToolLabel" style="display:none"></div><div class="bottom-spacer"></div>
+      </div>
+    </div>
+    <div class="panel" id="panel" style="display:none">
+      <div class="tabs">
+        <div class="tab active" data-tab="sprites" onclick="switchTab('sprites')">Sprites <span id="spriteCount">(0)</span></div>
+        <div class="tab" data-tab="categories" onclick="switchTab('categories')">Groups <span id="catTabCount">(0)</span></div>
+        <div class="tab" data-tab="animate" onclick="switchTab('animate')">Animate</div>
+      </div>
+      <div id="spritesTab" class="panel-tab-content">
+        <div class="panel-section" style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          <button class="btn sm" id="selectModeBtn" onclick="toggleSelectMode()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Select</button>
+          <button class="btn sm" id="filterBtn" onclick="toggleTagFilter()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filter</button>
+          <button class="btn sm" onclick="bulkRenameSprites()">Rename</button>
+        </div>
+        <div class="select-toolbar" id="selectToolbar" style="display:none">
+          <span class="sel-info" id="selInfo">0 sel</span>
+          <div class="sel-divider"></div>
+          <button class="btn sm" onclick="selectAllSprites()">All</button>
+          <button class="btn sm" onclick="deselectAllSprites()">None</button>
+          <button class="btn sm" onclick="duplicateSelected()">Dup</button>
+          <button class="btn sm danger" onclick="deleteSelected()">Del</button>
+          <button class="btn sm" onclick="showBulkRecolorModal()">Recolor</button>
+          <button class="btn sm" onclick="toggleSelectMode()">Done</button>
+        </div>
+        <div class="sprite-tag-bar" id="spriteTagBar" style="display:none">
+          <span class="tag-label">Add Tag:</span>
+          <select class="sprite-tag-select" id="spriteTagCatSelect" onchange="updateSpriteTagValueSelect()"><option value="">Group...</option></select>
+          <select class="sprite-tag-select" id="spriteTagValSelect" onchange="applyTagToSelected()"><option value="">Tag...</option></select>
+          <button class="btn sm" onclick="removeTagsFromSelected()" style="font-size:9px;" title="Remove tags"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="tag-filter-bar" id="tagFilterBar" style="display:none">
+          <span class="filter-label">Filter:</span>
+          <span class="filter-active-summary" id="filterActiveSummary"></span>
+          <div class="tag-filter-chips" id="tagFilterChips"></div>
+          <button class="filter-toggle" id="filterCollapseBtn" onclick="toggleFilterCollapse()" title="Collapse/expand"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <button class="filter-clear" id="tagFilterClear" onclick="clearTagFilter()" title="Clear filter"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="panel-body" id="spriteList"></div>
+      </div>
+      <div id="categoriesTab" class="panel-tab-content" style="display:none">
+        <div class="panel-section">
+          <div class="btn-row"><button class="btn sm" onclick="addCategory()">+ Group</button><button class="btn sm" onclick="addSubcatToActive()">+ Sub-group</button></div>
+          <div style="margin-top:6px;font-size:10px;color:var(--text2);">Drag sub-groups between groups. Click sub-group to assign selected sprites.</div>
+        </div>
+        <div class="panel-body" id="categoryList"></div>
+      </div>
+      <div id="animateTab" class="panel-tab-content" style="display:none">
+        <div class="panel-body" style="padding:8px;">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-bottom:6px;">Create animations from sub-group sprites</div>
+          <label style="font-size:10px;color:var(--text2);margin-bottom:4px;display:block;">Source Sub-group</label>
+          <select id="animSubcatSelect" onchange="loadAnimFrames()" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:var(--font-mono);font-size:10px;margin-bottom:8px;"></select>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-bottom:4px;">Frames <span id="animFrameCount">(0)</span></div>
+          <div class="anim-frame-list" id="animFrameList"><span style="font-size:10px;color:var(--text2);">Select a sub-group</span></div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-bottom:4px;margin-top:8px;">Base Layers <span style="font-size:8px;color:var(--text2);">(optional)</span></div>
+          <div style="font-size:9px;color:var(--text2);margin-bottom:4px;">Add sprites behind or on top of animation frames</div>
+          <div class="anim-frame-list" id="animBaseLayerList" style="min-height:36px;"><span style="font-size:10px;color:var(--text2);">Click + to add base sprites</span></div>
+          <div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;">
+            <button class="btn sm" onclick="pickBaseLayer()">+ Add Base Sprite</button>
+            <button class="btn sm danger" onclick="clearBaseLayers()" style="font-size:9px;">Clear</button>
+            <span style="flex:1"></span>
+            <label style="font-size:9px;color:var(--text2);margin:0;display:flex;align-items:center;gap:3px;"><input type="checkbox" id="baseLayerOnTop" onchange="renderAnimPreview()" style="accent-color:var(--accent);"> On top</label>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-bottom:4px;margin-top:8px;">Canvas &amp; Position</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+            <label style="font-size:9px;color:var(--text2);margin:0;">Size:</label>
+            <input type="number" id="animCanvasW" min="1" max="1024" value="64" style="width:48px;padding:2px 4px;border:1px solid var(--border);border-radius:3px;background:var(--surface2);color:var(--text);font-family:var(--font-mono);font-size:9px;" oninput="renderAnimPreview()">
+            <span style="font-size:9px;color:var(--text2);">×</span>
+            <input type="number" id="animCanvasH" min="1" max="1024" value="64" style="width:48px;padding:2px 4px;border:1px solid var(--border);border-radius:3px;background:var(--surface2);color:var(--text);font-family:var(--font-mono);font-size:9px;" oninput="renderAnimPreview()">
+            <button class="btn sm" onclick="animAutoSize()" style="font-size:8px;" title="Auto-fit to largest frame">Auto</button>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;margin-bottom:6px;">
+            <label style="font-size:9px;color:var(--text2);margin:0;">Frame offset:</label>
+            <button class="btn sm" onclick="nudgeAnimFrame(-1,0)" style="padding:2px 5px;font-size:10px;" title="Left">←</button>
+            <button class="btn sm" onclick="nudgeAnimFrame(0,-1)" style="padding:2px 5px;font-size:10px;" title="Up">↑</button>
+            <button class="btn sm" onclick="nudgeAnimFrame(0,1)" style="padding:2px 5px;font-size:10px;" title="Down">↓</button>
+            <button class="btn sm" onclick="nudgeAnimFrame(1,0)" style="padding:2px 5px;font-size:10px;" title="Right">→</button>
+            <span id="animOffsetInfo" style="font-family:var(--font-mono);font-size:8px;color:var(--text2);margin-left:2px;">0, 0</span>
+            <button class="btn sm" onclick="resetAnimFrameOffset()" style="font-size:8px;margin-left:auto;">Reset</button>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-bottom:4px;">Preview</div>
+          <div class="anim-preview-box" id="animPreviewBox"><canvas id="animPreviewCanvas" width="128" height="128"></canvas></div>
+          <div class="anim-controls" style="margin-top:6px;">
+            <button class="btn sm" id="animPlayBtn" onclick="toggleAnimPlay()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play</button>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--text2);">Delay:</span>
+            <input type="range" id="animDelaySlider" min="16" max="1000" value="100" oninput="updateAnimDelay(this.value)">
+            <input type="number" id="animDelayInput" min="16" max="2000" value="100" style="width:55px;" oninput="updateAnimDelay(this.value)">
+            <span style="font-family:var(--font-mono);font-size:8px;color:var(--text2);">ms</span>
+          </div>
+          <div style="margin-top:8px;">
+            <label style="font-size:10px;color:var(--text2);margin-bottom:4px;display:block;">Anchor (for mixed sizes)</label>
+            <select id="animAnchor" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:var(--font-mono);font-size:10px;margin-bottom:6px;">
+              <option value="center">Center</option>
+              <option value="top">Top</option>
+              <option value="bottom" selected>Bottom</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+              <option value="top-left">Top-Left</option>
+              <option value="top-right">Top-Right</option>
+              <option value="bottom-left">Bottom-Left</option>
+              <option value="bottom-right">Bottom-Right</option>
+            </select>
+          </div>
+          <div class="actions" style="margin-top:8px;justify-content:flex-start;">
+            <button class="btn primary sm" id="animSaveBtn" onclick="saveAnimation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Animate</button>
+            <button class="btn sm danger" id="animRemoveBtn" onclick="removeAnimation()" style="display:none">Remove</button>
+            <span id="animExportStatus" style="font-family:var(--font-mono);font-size:9px;color:var(--success);"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status-bar"><span id="statusText">Load a sprite sheet to begin</span><span style="flex:1"></span><span id="imgDims"></span><span style="margin-left:10px;color:var(--text2);">v1.5</span> <button onclick="showChangelog()" style="background:none;border:none;color:var(--accent);font-family:var(--font-mono);font-size:9px;cursor:pointer;text-decoration:underline;padding:0;">changelog</button></div>
+</div>
+<!-- Modals -->
+<div class="modal-overlay" id="repeatModal" style="display:none" onclick="if(event.target===this)this.style.display='none'"><div class="modal"><h3>Repeat Pattern</h3><p style="font-size:11px;color:var(--text2);margin-bottom:12px;">Select 2+ adjacent sprites, then choose direction and count to continue the same-sized boxes at the same spacing.</p><label>Direction to repeat</label><select id="repeatDir"><option value="right">→ Right</option><option value="left">← Left</option><option value="down">↓ Down</option><option value="up">↑ Up</option></select><label>Number of new copies</label><input type="number" id="repeatCount" value="4" min="1" max="200"><div class="checkbox-row"><input type="checkbox" id="repeatCustomPad"><label for="repeatCustomPad">Custom padding between repeats</label></div><div id="repeatPadRow" style="display:none;"><label>Padding (px)</label><input type="number" id="repeatPadVal" value="0" min="0" max="200"></div><canvas id="repeatPreviewCanvas" style="display:none;"></canvas><div class="actions"><button class="btn" onclick="document.getElementById('repeatModal').style.display='none'">Cancel</button><button class="btn primary" onclick="runRepeat()">Create Copies</button></div></div></div>
+<div class="modal-overlay" id="bulkRenameModal" style="display:none" onclick="if(event.target===this)this.style.display='none'"><div class="modal"><h3>Advanced Rename</h3><p style="font-size:11px;color:var(--text2);margin-bottom:8px;">Build a naming convention using variables. Click to insert at cursor.</p><label>Name Pattern</label><input type="text" id="bulkRenamePattern" value="{name}" placeholder="e.g. {group}_{view_/_angle}_{n}"><div style="margin-bottom:8px;"><div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Variables:</div><div id="renameVarChips"></div></div><label>Start # (for {n})</label><input type="number" id="bulkRenameStart" value="1" min="0"><div class="checkbox-row"><input type="checkbox" id="bulkRenamePad"><label for="bulkRenamePad">Zero-pad numbers (e.g. 01, 02)</label></div><div class="rename-preview" id="renamePreview"></div><div class="actions"><button class="btn" onclick="document.getElementById('bulkRenameModal').style.display='none'">Cancel</button><button class="btn primary" onclick="executeBulkRename()">Rename</button></div></div></div>
+<div class="modal-overlay" id="tagMgmtModal" style="display:none" onclick="if(event.target===this)this.style.display='none'"><div class="modal"><h3>Manage Tag Categories</h3><div id="tagMgmtBody"></div><div class="actions" style="margin-top:12px;"><button class="btn" onclick="addTagCategory()">+ New Category</button><button class="btn primary" onclick="closeTagMgmt()">Done</button></div></div></div>
+<div class="modal-overlay" id="autoColorModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal" style="width:min(560px,92vw);max-height:85vh;">
+  <h3>Auto-Tag Colors</h3>
+  <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">Analyze dominant colors in each sprite and auto-apply color tags.</p>
+  <label>Detail Level</label>
+  <div class="btn-row" style="margin-bottom:10px;">
+    <button class="btn sm" id="colorDetailBasic" onclick="setColorDetail('basic')">Basic</button>
+    <button class="btn sm active-mode" id="colorDetailShade" onclick="setColorDetail('shade')">Light / Dark</button>
+    <button class="btn sm" id="colorDetailFine" onclick="setColorDetail('fine')">Very Light / Dark</button>
+  </div>
+  <div class="checkbox-row"><input type="checkbox" id="colorOnlySelected"><label for="colorOnlySelected">Only analyze selected sprites</label></div>
+  <div class="checkbox-row"><input type="checkbox" id="colorReplace" checked><label for="colorReplace">Replace existing color tags</label></div>
+  <div class="actions" style="margin-bottom:10px;justify-content:flex-start;">
+    <button class="btn primary" onclick="runColorAnalysis()">Analyze</button>
+    <span id="colorAnalysisStatus" style="font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-left:8px;"></span>
+  </div>
+  <div id="colorPreviewWrap" style="display:none;">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <span style="font-family:var(--font-mono);font-size:11px;font-weight:600;">Preview</span>
+      <span id="colorPreviewCount" style="font-family:var(--font-mono);font-size:10px;color:var(--text2);"></span>
+      <span style="flex:1"></span>
+      <button class="btn sm" onclick="colorPreviewPrev()">‹</button>
+      <span id="colorPreviewIdx" style="font-family:var(--font-mono);font-size:10px;color:var(--text2);min-width:50px;text-align:center;">1 / 1</span>
+      <button class="btn sm" onclick="colorPreviewNext()">›</button>
+    </div>
+    <div id="colorPreviewBody" style="border:1px solid var(--border);border-radius:6px;padding:8px;background:var(--bg);max-height:260px;overflow-y:auto;"></div>
+    <div class="actions" style="margin-top:10px;">
+      <button class="btn" onclick="document.getElementById('autoColorModal').style.display='none'">Cancel</button>
+      <button class="btn primary" onclick="applyColorTags()">Apply Tags</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="modal-overlay" id="changelogModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal" style="width:min(480px,90vw);max-height:80vh;">
+  <h3>Changelog</h3>
+  <div id="changelogBody" style="font-size:11px;color:var(--text2);overflow-y:auto;max-height:60vh;">Loading...</div>
+  <div class="actions" style="margin-top:10px;"><button class="btn primary" onclick="document.getElementById('changelogModal').style.display='none'">Close</button></div>
+</div>
+</div>
+<!-- Remove Background Modal -->
+<div class="modal-overlay" id="removeBgModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal" style="width:min(520px,92vw);max-height:85vh;">
+  <h3>Remove Background</h3>
+  <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">Make a background color transparent. Pick a color or auto-detect from corners.</p>
+  <div class="rmbg-color-row">
+    <button class="btn sm" onclick="rmbgAutoDetect()">Auto-detect</button>
+    <button class="btn sm" id="rmbgEyedropperBtn" onclick="rmbgStartEyedropper()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M2 22l1-1h3l9-9"/><path d="M15 8l-4 4"/><path d="M17.5 2.5a2.12 2.12 0 0 1 3 3l-2 2-3-3 2-2z"/></svg> Eyedropper</button>
+    <input type="color" id="rmbgColorInput" value="#000000" onchange="rmbgSetColor(this.value)" style="width:28px;height:28px;border:1px solid var(--border);border-radius:4px;padding:0;cursor:pointer;">
+    <div class="rmbg-swatch" id="rmbgSwatchPreview" style="background:#000000;" title="Selected color"></div>
+    <span id="rmbgColorHex" style="font-family:var(--font-mono);font-size:10px;color:var(--text2);">#000000</span>
+  </div>
+  <div style="margin-bottom:8px;">
+    <label style="font-size:10px;color:var(--text2);margin-bottom:3px;display:block;">Tolerance: <span id="rmbgTolVal">20</span></label>
+    <input type="range" id="rmbgTolerance" min="0" max="120" value="20" style="width:100%;accent-color:var(--accent);" oninput="document.getElementById('rmbgTolVal').textContent=this.value;rmbgUpdatePreview();">
+  </div>
+  <div class="rmbg-preview">
+    <div class="rmbg-canvas-wrap"><canvas id="rmbgBeforeCanvas" width="192" height="192"></canvas></div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;"><span style="font-size:18px;color:var(--text2);">→</span></div>
+    <div class="rmbg-canvas-wrap"><canvas id="rmbgAfterCanvas" width="192" height="192"></canvas></div>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="document.getElementById('removeBgModal').style.display='none'">Cancel</button>
+    <button class="btn primary" onclick="rmbgApply()">Remove Background</button>
+  </div>
+</div>
+</div>
+<!-- Grid Tool Modal -->
+<div class="modal-overlay" id="gridModal" style="display:none" onclick="if(event.target===this)closeGridModal()">
+<div class="modal" style="width:min(480px,92vw);max-height:85vh;">
+  <h3>Grid Slicer</h3>
+  <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">Slice sprites using an even grid or smart row detection.</p>
+  <div class="btn-row" style="margin-bottom:10px;">
+    <button class="btn sm active-mode" id="gridModeSmartBtn" onclick="setGridMode('smart')">Smart Detect</button>
+    <button class="btn sm" id="gridModeColsBtn" onclick="setGridMode('cols')">Columns / Rows</button>
+    <button class="btn sm" id="gridModeSizeBtn" onclick="setGridMode('size')">Cell Size (px)</button>
+  </div>
+  <div id="gridSmartInputs">
+    <p style="font-size:10px;color:var(--text2);margin-bottom:8px;">Scans for empty rows/columns to find row bands and individual sprites automatically. Adjusts to varying row heights and sprite widths.</p>
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;"><label>BG Tolerance</label><input type="number" id="gridSmartBgTol" value="30" min="0" max="200" oninput="updateGridPreview()"></div>
+      <div style="flex:1;"><label>Min Gap (px)</label><input type="number" id="gridSmartMinGap" value="2" min="1" max="100" oninput="updateGridPreview()"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <div style="flex:1;"><label>Min Sprite Width</label><input type="number" id="gridSmartMinW" value="4" min="1" max="500" oninput="updateGridPreview()"></div>
+      <div style="flex:1;"><label>Min Sprite Height</label><input type="number" id="gridSmartMinH" value="4" min="1" max="500" oninput="updateGridPreview()"></div>
+    </div>
+    <div class="checkbox-row" style="margin-top:8px;"><input type="checkbox" id="gridSmartUniform"><label for="gridSmartUniform">Uniform cell width per row (pad to widest sprite)</label></div>
+  </div>
+  <div id="gridColsInputs" style="display:none;">
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;"><label>Columns</label><input type="number" id="gridCols" value="4" min="1" max="200" oninput="updateGridPreview()"></div>
+      <div style="flex:1;"><label>Rows</label><input type="number" id="gridRows" value="4" min="1" max="200" oninput="updateGridPreview()"></div>
+    </div>
+  </div>
+  <div id="gridSizeInputs" style="display:none;">
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;"><label>Cell Width</label><input type="number" id="gridCellW" value="32" min="1" max="4096" oninput="updateGridPreview()"></div>
+      <div style="flex:1;"><label>Cell Height</label><input type="number" id="gridCellH" value="32" min="1" max="4096" oninput="updateGridPreview()"></div>
+    </div>
+  </div>
+  <div id="gridUniformInputs" style="display:none;margin-top:4px;">
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;"><label>Offset X</label><input type="number" id="gridOffX" value="0" min="0" oninput="updateGridPreview()"></div>
+      <div style="flex:1;"><label>Offset Y</label><input type="number" id="gridOffY" value="0" min="0" oninput="updateGridPreview()"></div>
+    </div>
+  </div>
+  <div style="margin-top:8px;">
+    <label style="font-size:10px;color:var(--text2);margin-bottom:3px;display:block;">Grid Opacity: <span id="gridOpacityVal">60</span>%</label>
+    <input type="range" id="gridOpacity" min="10" max="100" value="60" style="width:100%;accent-color:var(--accent);" oninput="document.getElementById('gridOpacityVal').textContent=this.value;updateGridPreview();">
+  </div>
+  <div style="font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-top:6px;" id="gridInfo">Configure grid settings above</div>
+  <div class="actions" style="margin-top:10px;">
+    <button class="btn" onclick="closeGridModal()">Cancel</button>
+    <button class="btn" onclick="clearGridOverlay()">Clear Grid</button>
+    <button class="btn primary" onclick="gridSliceAll()">Slice All</button>
+  </div>
+</div>
+</div>
+
+<script src="assets/js/core.js"></script>
+<script src="assets/js/animation.js"></script>
+<script src="assets/js/session.js"></script>
+<script src="assets/js/editor.js"></script>
+<script src="assets/js/history.js"></script>
+
+</body>
+</html>
